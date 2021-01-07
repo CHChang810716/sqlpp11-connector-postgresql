@@ -24,21 +24,39 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
-project(sqlpp11-connector-postgresql VERSION 0.1 LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
+include(cmake/HunterGate.cmake)
+set(
+    HUNTER_CACHE_SERVERS
+    "https://github.com/CHChang810716/hunter-binary-cache"
+    CACHE
+    STRING
+    "Hunter cache servers"
+)
+HunterGate(
+    URL "https://github.com/CHChang810716/hunter.git"
+    SHA1 62eee92093b4cd36e80ca033689d4abb7e2def32
+)
+project(sqlpp11-connector-postgresql VERSION 0.54.0 LANGUAGES CXX)
 
 option(ENABLE_TESTS "Build unit tests" ON)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(ConfigPackageLocation lib/cmake/sqlpp-connector-postgresql)
+hunter_add_package(Sqlpp11)
+find_package(Sqlpp11 CONFIG REQUIRED)
 
-find_package(Sqlpp11 REQUIRED)
+hunter_add_package(ZLIB)
+find_package(ZLIB CONFIG REQUIRED)
+
+hunter_add_package(PostgreSQL)
 find_package(PostgreSQL REQUIRED)
-find_package(Boost REQUIRED)
 
-include_directories("${PROJECT_SOURCE_DIR}/include")
-include_directories(${Boost_INCLUDE_DIRS})
+hunter_add_package(Boost)
+find_package(Boost CONFIG REQUIRED)
+
+# include_directories("${PROJECT_SOURCE_DIR}/include")
+# include_directories(${Boost_INCLUDE_DIRS})
 
 add_subdirectory(src)
 
@@ -47,12 +65,46 @@ if (ENABLE_TESTS)
     add_subdirectory(tests)
 endif()
 
-install(DIRECTORY "${PROJECT_SOURCE_DIR}/include/sqlpp11" DESTINATION include COMPONENT Devel)
+# install(DIRECTORY "${PROJECT_SOURCE_DIR}/include/sqlpp11" DESTINATION include COMPONENT Devel)
+# install(
+#   FILES
+#     cmake/Sqlpp-connector-postgresqlConfig.cmake
+#   DESTINATION
+#     ${ConfigPackageLocation}
+#   COMPONENT
+#     Devel
+# )
+
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+set(AKT_GEN_DIR             "${CMAKE_CURRENT_BINARY_DIR}/generated")
+set(AKT_CONFIG_INSTALL_DIR  "lib/cmake/${PROJECT_NAME}")
+set(AKT_CONFIG_VERSION      "${AKT_GEN_DIR}/${PROJECT_NAME}ConfigVersion.cmake")
+set(AKT_PROJECT_CONFIG      "${AKT_GEN_DIR}/${PROJECT_NAME}Config.cmake")
+set(AKT_TARGETS_EXPORT      "${PROJECT_NAME}Targets")
+set(AKT_NAMESPACE           "${PROJECT_NAME}::")
+configure_package_config_file(
+    cmake/Config.cmake.in
+    ${AKT_PROJECT_CONFIG}
+    INSTALL_DESTINATION ${AKT_CONFIG_INSTALL_DIR}
+)
+write_basic_package_version_file(
+    ${AKT_CONFIG_VERSION} COMPATIBILITY SameMajorVersion
+)
 install(
-  FILES
-    cmake/Sqlpp-connector-postgresqlConfig.cmake
-  DESTINATION
-    ${ConfigPackageLocation}
-  COMPONENT
-    Devel
+    FILES ${AKT_PROJECT_CONFIG}
+    DESTINATION ${AKT_CONFIG_INSTALL_DIR}
+)
+install(
+    TARGETS sqlpp11-connector-postgresql
+    EXPORT ${AKT_TARGETS_EXPORT}
+    BUNDLE DESTINATION . COMPONENT Runtime
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT Runtime
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Library
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Develop
+)
+install(
+    EXPORT ${AKT_TARGETS_EXPORT}
+    NAMESPACE ${AKT_NAMESPACE}
+    DESTINATION ${AKT_CONFIG_INSTALL_DIR}
 )
