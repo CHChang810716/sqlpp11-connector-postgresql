@@ -35,7 +35,7 @@ set(
 )
 HunterGate(
     URL "https://github.com/CHChang810716/hunter.git"
-    SHA1 62eee92093b4cd36e80ca033689d4abb7e2def32
+    SHA1 447748f233e0e1be353fd8e558d9e81c61b17044
 )
 project(sqlpp11-connector-postgresql VERSION 0.54.0 LANGUAGES CXX)
 
@@ -56,9 +56,6 @@ find_package(PostgreSQL REQUIRED)
 hunter_add_package(Boost)
 find_package(Boost CONFIG REQUIRED)
 
-# include_directories("${PROJECT_SOURCE_DIR}/include")
-# include_directories(${Boost_INCLUDE_DIRS})
-
 add_subdirectory(src)
 
 if (ENABLE_TESTS)
@@ -66,15 +63,8 @@ if (ENABLE_TESTS)
     add_subdirectory(tests)
 endif()
 
-# install(DIRECTORY "${PROJECT_SOURCE_DIR}/include/sqlpp11" DESTINATION include COMPONENT Devel)
-# install(
-#   FILES
-#     cmake/Sqlpp-connector-postgresqlConfig.cmake
-#   DESTINATION
-#     ${ConfigPackageLocation}
-#   COMPONENT
-#     Devel
-# )
+install(DIRECTORY "${PROJECT_SOURCE_DIR}/include/sqlpp11" 
+    DESTINATION include COMPONENT Devel)
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
