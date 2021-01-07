@@ -48,6 +48,11 @@ if (WIN32)
 elseif(APPLE)
   set(POSTGRESQL_LIB_FILE "lib${PostgreSQL_LIBRARIES}.dylib")
 else()
+  if("${PostgreSQL_LIBRARIES}" MATCHES ".+lib.+so")
+	  get_filename_component(POSTGRESQL_LIB_FILE ${PostgreSQL_LIBRARIES} NAME)
+  else()
+      set(POSTGRESQL_LIB_FILE "${PostgreSQL_LIBRARIES}.so")
+  endif()
   set(POSTGRESQL_LIB_FILE "lib${PostgreSQL_LIBRARIES}.so")
 endif()
 if(BUILD_SHARED_LIBS)
@@ -59,6 +64,17 @@ if(BUILD_SHARED_LIBS)
     -DSQLPP_DYNAMIC_LOADING 
     -DSQLPP_DYNAMIC_LOADING_FILENAME=${POSTGRESQL_LIB_FILE}
   )
+endif()
+
+# Generate code coverage if enabled
+if (CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+	# Add required flags for code coverage
+	target_compile_options(sqlpp11-connector-postgresql PUBLIC -O0 --coverage)
+	if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.13)
+		target_link_options(sqlpp11-connector-postgresql INTERFACE --coverage)
+	else()
+		target_link_libraries(sqlpp11-connector-postgresql INTERFACE --coverage)
+	endif()
 endif()
 target_compile_features(sqlpp11-connector-postgresql PRIVATE cxx_auto_type)
 

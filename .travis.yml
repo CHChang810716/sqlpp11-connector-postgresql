@@ -1,7 +1,11 @@
+addons:
+  apt:
+    packages: lcov postgresql-server-dev-all
+
 language: cpp
 
 sudo: required
-dist: trusty
+dist: bionic
 
 compiler:
   - gcc
@@ -15,16 +19,22 @@ notifications:
 services:
   - postgresql
 
+before_install:
+  - pip install --user cpp-coveralls
+
 install:
-  - sudo apt-get install -y postgresql-server-dev-all libboost-dev
   - pwd
   - g++ --version
+  - wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | sudo tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null &&
+      sudo apt-add-repository -y "deb https://apt.kitware.com/ubuntu/ bionic main" &&
+      sudo apt-get update -qq -y &&
+      sudo apt-get install -y cmake &&
+      sudo rm -r /usr/local/cmake-3.12.4/;
   - cmake --version
   - cd ..
   - git clone https://github.com/HowardHinnant/date
   - cd date
-  - git checkout tags/v2.4
-  - cmake -DCMAKE_BUILD_TYPE=Release -DTZ_CXX_STANDARD=11 .
+  - cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=11 .
   - make VERBOSE=1 && sudo make install
   - cd ..
   - git clone https://github.com/rbock/sqlpp11.git
@@ -36,11 +46,20 @@ install:
 before_script:
   - mkdir build
   - cd build
-  - cmake .. -DCMAKE_MODULE_PATH="/usr/local/lib/cmake/Sqlpp11"
+  - cmake .. -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_BUILD_TYPE=Debug -DCODE_COVERAGE=ON -DCMAKE_MODULE_PATH="/usr/local/lib/cmake/Sqlpp11"
+  - cd ..
 
 script:
-  - cmake --build .
-  - echo -e "sudo -u postgres createuser -l -S -D -R $USER\nsudo -u postgres createdb $USER" > setup_db.sh
-  - chmod a+x setup_db.sh
-  - sudo ./setup_db.sh
+  - cmake --build build
+  - cd build
   - ctest --output-on-failure
+
+after_success:
+  # Create lcov report
+  - lcov --directory . --capture --output-file coverage.info
+  # Filter out system information
+  - lcov --remove coverage.info '/usr/*' "${HOME}"'/build/matthijs/sqlpp11-connector-postgresql/tests/*' --output-file coverage.info
+  # Output
+  - lcov --list coverage.info
+  # Upload to codecov
+  - bash <(curl -s https://codecov.io/bash) -f coverage.info || echo "Codecov did not collect coverage reports"

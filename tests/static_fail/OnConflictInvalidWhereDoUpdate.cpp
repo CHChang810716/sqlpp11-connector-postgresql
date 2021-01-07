@@ -1,5 +1,5 @@
 /**
- * Copyright © 2014-2015, Matthijs Möhlmann
+ * Copyright © 2014-2019, Matthijs Möhlmann
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,47 +25,26 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SQLPP_POSTGRESQL_CONNECTION_HANDLE_H
-#define SQLPP_POSTGRESQL_CONNECTION_HANDLE_H
+#include <iostream>
 
-#include <memory>
-#include <set>
-#include <string>
+#include <sqlpp11/postgresql/postgresql.h>
+#include <sqlpp11/sqlpp11.h>
 
-#include <libpq-fe.h>
-#include <sqlpp11/postgresql/visibility.h>
+#include "../MockDb.h"
 
-namespace sqlpp
+#include "../TabBar.h"
+#include "../TabFoo.h"
+
+namespace sql = sqlpp::postgresql;
+
+int main(int, char*[])
 {
-  namespace postgresql
-  {
-    // Forward declaration
-    struct connection_config;
+  model::TabFoo foo = {};
+  // model::TabBar bar = {};
 
-    namespace detail
-    {
-      struct DLL_LOCAL connection_handle
-      {
-        const std::shared_ptr<connection_config> config;
-        PGconn* postgres{nullptr};
-		std::set<std::string> prepared_statement_names;
-
-        connection_handle(const std::shared_ptr<connection_config>& config);
-        ~connection_handle();
-        connection_handle(const connection_handle&) = delete;
-        connection_handle(connection_handle&&) = delete;
-        connection_handle& operator=(const connection_handle&) = delete;
-        connection_handle& operator=(connection_handle&&) = delete;
-
-        PGconn* native() const
-        {
-          return postgres;
-        }
-
-        void deallocate_prepared_statement(const std::string& name);
-      };
-    }
-  }
+  auto insert1 = sql::insert_into(foo)
+                     .default_values()
+                     .on_conflict()
+                     .do_update(foo.beta = 5, foo.gamma = "test bla", foo.c_bool = true)
+                     .where(foo.beta = 3);
 }
-
-#endif

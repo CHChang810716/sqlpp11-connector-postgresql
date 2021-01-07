@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2016, Roland Bock
+ * Copyright (c) 2020, Matthijs Möhlmann <matthijs@cacholong.nl>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
@@ -24,46 +24,61 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SQLPP_POSTGRESQL_INSERT_H
-#define SQLPP_POSTGRESQL_INSERT_H
+#ifndef SQLPP_UUID_OPERAND_H
+#define SQLPP_UUID_OPERAND_H
 
-#include <sqlpp11/insert.h>
-#include <sqlpp11/postgresql/on_conflict.h>
-#include <sqlpp11/postgresql/returning.h>
+#include <sqlpp11/type_traits.h>
+#include <sqlpp11/alias_operators.h>
+#include <sqlpp11/serializer.h>
+
+#include <boost/uuid/uuid_io.hpp>
 
 namespace sqlpp
 {
-  namespace postgresql
+  struct uuid;
+
+  struct uuid_operand : public alias_operators<uuid_operand>
   {
-    template <typename Database>
-    using blank_insert_t =
-        statement_t<Database, insert_t, no_into_t, no_insert_value_list_t, no_on_conflict_t, no_returning_t>;
+    using _traits = make_traits<uuid, tag::is_expression, tag::is_wrapped_value>;
+    using _nodes = detail::type_vector<>;
+    using _is_aggregate_expression = std::true_type;
 
-    inline auto insert() -> blank_insert_t<void>
+    using _value_t = boost::uuids::uuid;
+
+    uuid_operand() : _t{}
     {
-      return {blank_insert_t<void>()};
     }
 
-    template <typename Table>
-    constexpr auto insert_into(Table table) -> decltype(blank_insert_t<void>().into(table))
+    uuid_operand(_value_t t) : _t(t)
     {
-      return {blank_insert_t<void>().into(table)};
     }
 
-    template <typename Database>
-    constexpr auto dynamic_insert(const Database&) -> decltype(blank_insert_t<Database>())
+    uuid_operand(const uuid_operand&) = default;
+    uuid_operand(uuid_operand&&) = default;
+    uuid_operand& operator=(const uuid_operand&) = default;
+    uuid_operand& operator=(uuid_operand&&) = default;
+    ~uuid_operand() = default;
+
+    bool _is_trivial() const
     {
-      static_assert(std::is_base_of<connection, Database>::value, "Invalid database parameter");
-      return {blank_insert_t<Database>()};
+      return _t == _value_t{};
     }
 
-    template <typename Database, typename Table>
-    constexpr auto dynamic_insert_into(const Database&, Table table) -> decltype(blank_insert_t<Database>().into(table))
+    _value_t _t;
+  };
+
+  template <typename Context>
+  struct serializer_t<Context, uuid_operand>
+  {
+    using _serialize_check = consistent_t;
+    using Operand = uuid_operand;
+
+    static Context& _(const Operand& t, Context& context)
     {
-      static_assert(std::is_base_of<connection, Database>::value, "Invalid database parameter");
-      return {blank_insert_t<Database>().into(table)};
+      context << '\'' << t._t << '\'';
+      return context;
     }
-  }  // namespace postgresql
+  };
 }  // namespace sqlpp
 
 #endif

@@ -1,5 +1,5 @@
 /**
- * Copyright © 2014-2015, Matthijs Möhlmann
+ * Copyright (c) 2020, Matthijs Möhlmann <matthijs@cacholong.nl>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -9,8 +9,8 @@
  *   list of conditions and the following disclaimer.
  *
  *   Redistributions in binary form must reproduce the above copyright notice,
- *   this list of conditions and the following disclaimer in the documentation
- *   and/or other materials provided with the distribution.
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -25,47 +25,42 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SQLPP_POSTGRESQL_CONNECTION_HANDLE_H
-#define SQLPP_POSTGRESQL_CONNECTION_HANDLE_H
+#ifndef SQLPP_UUID_RESULT_FIELD_H
+#define SQLPP_UUID_RESULT_FIELD_H
 
-#include <memory>
-#include <set>
-#include <string>
+#include <sqlpp11/basic_expression_operators.h>
+#include <sqlpp11/data_types/uuid/data_type.h>
+#include <sqlpp11/field_spec.h>
+#include <sqlpp11/result_field.h>
+#include <sqlpp11/result_field_base.h>
 
-#include <libpq-fe.h>
-#include <sqlpp11/postgresql/visibility.h>
+#include <boost/uuid/string_generator.hpp>
 
 namespace sqlpp
 {
-  namespace postgresql
+  template <typename Db, typename NameType, bool CanBeNull, bool NullIsTrivialValue>
+  struct result_field_t<Db, field_spec_t<NameType, uuid, CanBeNull, NullIsTrivialValue>>
+      : public result_field_base<Db, field_spec_t<NameType, uuid, CanBeNull, NullIsTrivialValue>>
   {
-    // Forward declaration
-    struct connection_config;
-
-    namespace detail
+    template <typename Target>
+    void _bind(Target& target, size_t index)
     {
-      struct DLL_LOCAL connection_handle
+      const char* val{nullptr};
+      size_t len;
+      target._bind_text_result(index, &val, &len);
+      if (val)
       {
-        const std::shared_ptr<connection_config> config;
-        PGconn* postgres{nullptr};
-		std::set<std::string> prepared_statement_names;
-
-        connection_handle(const std::shared_ptr<connection_config>& config);
-        ~connection_handle();
-        connection_handle(const connection_handle&) = delete;
-        connection_handle(connection_handle&&) = delete;
-        connection_handle& operator=(const connection_handle&) = delete;
-        connection_handle& operator=(connection_handle&&) = delete;
-
-        PGconn* native() const
-        {
-          return postgres;
-        }
-
-        void deallocate_prepared_statement(const std::string& name);
-      };
+        boost::uuids::string_generator gen;
+        this->_value = gen(std::string(val, len));
+      }
+      this->_is_null = (val == nullptr);
     }
-  }
-}
+
+    template <typename Target>
+    void _post_bind(Target& target, size_t index)
+    {
+    }
+  };
+}  // namespace sqlpp
 
 #endif

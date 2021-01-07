@@ -1,5 +1,5 @@
 /**
- * Copyright © 2014-2015, Matthijs Möhlmann
+ * Copyright © 2014-2019, Matthijs Möhlmann
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,48 +24,35 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#include <iostream>
 
-#ifndef SQLPP_POSTGRESQL_CONNECTION_HANDLE_H
-#define SQLPP_POSTGRESQL_CONNECTION_HANDLE_H
+#include <sqlpp11/postgresql/postgresql.h>
+#include <sqlpp11/sqlpp11.h>
 
-#include <memory>
-#include <set>
-#include <string>
+#include "../MockDb.h"
+#include "../TabBar.h"
+#include "../TabFoo.h"
 
-#include <libpq-fe.h>
-#include <sqlpp11/postgresql/visibility.h>
-
-namespace sqlpp
+namespace sql = sqlpp::postgresql;
+int main(int, char*[])
 {
-  namespace postgresql
-  {
-    // Forward declaration
-    struct connection_config;
+  // Tables
+  model::TabFoo foo;
+  model::TabBar bar;
 
-    namespace detail
-    {
-      struct DLL_LOCAL connection_handle
-      {
-        const std::shared_ptr<connection_config> config;
-        PGconn* postgres{nullptr};
-		std::set<std::string> prepared_statement_names;
+  // Should not compile
+  auto sql = sqlpp::postgresql::insert_into(foo).set(foo.gamma = "bla").returning();
+  MockDb dummydb;
+  const auto res = dummydb(sql);
 
-        connection_handle(const std::shared_ptr<connection_config>& config);
-        ~connection_handle();
-        connection_handle(const connection_handle&) = delete;
-        connection_handle(connection_handle&&) = delete;
-        connection_handle& operator=(const connection_handle&) = delete;
-        connection_handle& operator=(connection_handle&&) = delete;
+  //auto sql = sqlpp::postgresql::insert_into(foo).set(foo.gamma = "bla").returning(all_of(foo));
 
-        PGconn* native() const
-        {
-          return postgres;
-        }
+  //auto sql = sqlpp::postgresql::insert_into(foo).set(foo.gamma = "bla").returning(bar.c_int);
+  //MockDb dummydb;
+  //const auto res = dummydb(sql);
 
-        void deallocate_prepared_statement(const std::string& name);
-      };
-    }
-  }
+  // Should not compile
+  //auto sql = sqlpp::postgresql::insert_into(foo).set(foo.gamma = "bla").returning();
+
+  return 0;
 }
-
-#endif

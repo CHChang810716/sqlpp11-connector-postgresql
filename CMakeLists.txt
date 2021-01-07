@@ -40,6 +40,7 @@ HunterGate(
 project(sqlpp11-connector-postgresql VERSION 0.54.0 LANGUAGES CXX)
 
 option(ENABLE_TESTS "Build unit tests" ON)
+option(CODE_COVERAGE "Enable coverage reporting" OFF)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 

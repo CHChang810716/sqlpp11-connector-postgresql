@@ -1,5 +1,5 @@
 /**
- * Copyright © 2014-2015, Matthijs Möhlmann
+ * Copyright (c) 2020, Matthijs Möhlmann <matthijs@cacholong.nl>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -9,8 +9,8 @@
  *   list of conditions and the following disclaimer.
  *
  *   Redistributions in binary form must reproduce the above copyright notice,
- *   this list of conditions and the following disclaimer in the documentation
- *   and/or other materials provided with the distribution.
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -25,47 +25,32 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SQLPP_POSTGRESQL_CONNECTION_HANDLE_H
-#define SQLPP_POSTGRESQL_CONNECTION_HANDLE_H
+#ifndef SQLPP_UUID_PARAMETER_VALUE_H
+#define SQLPP_UUID_PARAMETER_VALUE_H
 
-#include <memory>
-#include <set>
-#include <string>
+#include <sqlpp11/data_types/parameter_value.h>
+#include <sqlpp11/data_types/parameter_value_base.h>
+#include <sqlpp11/data_types/uuid/data_type.h>
+#include <sqlpp11/tvin.h>
 
-#include <libpq-fe.h>
-#include <sqlpp11/postgresql/visibility.h>
+#include <boost/uuid/uuid_io.hpp>
 
 namespace sqlpp
 {
-  namespace postgresql
+  template <>
+  struct parameter_value_t<uuid> : public parameter_value_base<uuid>
   {
-    // Forward declaration
-    struct connection_config;
+    using base = parameter_value_base<uuid>;
+    using base::base;
+    using base::operator=;
 
-    namespace detail
+    template <typename Target>
+    void _bind(Target& target, size_t index) const
     {
-      struct DLL_LOCAL connection_handle
-      {
-        const std::shared_ptr<connection_config> config;
-        PGconn* postgres{nullptr};
-		std::set<std::string> prepared_statement_names;
-
-        connection_handle(const std::shared_ptr<connection_config>& config);
-        ~connection_handle();
-        connection_handle(const connection_handle&) = delete;
-        connection_handle(connection_handle&&) = delete;
-        connection_handle& operator=(const connection_handle&) = delete;
-        connection_handle& operator=(connection_handle&&) = delete;
-
-        PGconn* native() const
-        {
-          return postgres;
-        }
-
-        void deallocate_prepared_statement(const std::string& name);
-      };
+      std::string val = boost::uuids::to_string(this->_value);
+      target._bind_text_parameter(index, &val, _is_null);
     }
-  }
-}
+  };
+}  // namespace sqlpp
 
 #endif
