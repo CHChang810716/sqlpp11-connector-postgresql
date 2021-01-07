@@ -37,7 +37,7 @@ HunterGate(
     URL "https://github.com/CHChang810716/hunter.git"
     SHA1 447748f233e0e1be353fd8e558d9e81c61b17044
 )
-project(sqlpp11-connector-postgresql VERSION 0.54.0 LANGUAGES CXX)
+project(sqlpp11-connector-postgresql VERSION 0.57.0 LANGUAGES CXX)
 
 option(ENABLE_TESTS "Build unit tests" ON)
 option(CODE_COVERAGE "Enable coverage reporting" OFF)
